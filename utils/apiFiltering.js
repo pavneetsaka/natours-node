@@ -1,3 +1,4 @@
+const Tour = require('./../models/tourModel');
 class ApiFiltering{
     constructor(query, queryString){
         this.query = query;
@@ -68,7 +69,7 @@ class ApiFiltering{
     }
 
     paginate(){
-         //Pass fields in query param as -> ?page=2&limit=10
+        //Pass fields in query param as -> ?page=2&limit=10
         const page = this.queryString.page * 1 || 1;
         const limit = this.queryString.limit * 1 || 100;
         const skipVal = (page - 1) * limit;
@@ -76,10 +77,10 @@ class ApiFiltering{
         this.query = this.query.skip(skipVal).limit(limit);
 
         //If case where user pass a page number with no records in data
-        /*if(this.queryString.page){
+        if(this.queryString.page){
             const numTours = Tour.countDocuments();
             if(skipVal >= numTours) throw new Error('This page does not exists');
-        }*/
+        }
         return this; //Returns the entire object class for chaining other functions
     }
 }

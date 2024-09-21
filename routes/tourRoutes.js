@@ -1,26 +1,27 @@
 const express = require('express');
-const tourCountroller = require('./../controllers/tourController');
+const tourController = require('./../controllers/tourController');
+const authController = require('./../controllers/authController');
 const router = express.Router();
 
-// router.param('id', tourCountroller.checkId);
+// router.param('id', tourController.checkId);
 
 /*--- Route Alisaing ----*/
 //Middleware as first arguments handles the query param defined by default, based on the alias purpose
-router.route('/top-5-cheap-trips').get(tourCountroller.aliasTop5Tours, tourCountroller.getAllTours);
+router.route('/top-5-cheap-trips').get(tourController.aliasTop5Tours, tourController.getAllTours);
 
 /*-- Aggregation pipeline --*/
-router.route('/tour-stats').get(tourCountroller.getTourStats);
-router.route('/monthly-tour-plan/:year').get(tourCountroller.getMonthlyPlan);
+router.route('/tour-stats').get(tourController.getTourStats);
+router.route('/monthly-tour-plan/:year').get(tourController.getMonthlyPlan);
 
 router
 	.route('/')
-	.get(tourCountroller.getAllTours)
-	.post(tourCountroller.createTour);
+	.get(authController.protect, tourController.getAllTours)
+	.post(tourController.createTour);
 
 router
 	.route('/:id')
-	.get(tourCountroller.getTour)
-	.patch(tourCountroller.updateTour)
-	.delete(tourCountroller.deleteTour);
+	.get(tourController.getTour)
+	.patch(tourController.updateTour)
+	.delete(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourController.deleteTour);
 
 module.exports = router;
