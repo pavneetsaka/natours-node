@@ -2,9 +2,11 @@
 const Tour = require('./../models/tourModel');
 
 /*---Exporting all API Filtering of data via dedicated class---*/
-const ApiFiltering = require('./../utils/apiFiltering');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
+
+/* Factory Handler - Helper */
+const factory = require('./handlerFactory');
 
 /*const tours = JSON.parse(
 	fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
@@ -146,7 +148,7 @@ exports.aliasTop5Tours = (req, res, next) => {
 // };
 
 //Optimized way with a global catch method provided by express - MongoDB
-exports.getAllTours = catchAsync(async (req, res, next) => {
+/* exports.getAllTours = catchAsync(async (req, res, next) => {
     //Here Tour.find() returns the cursor to the document in the mongoDB
     //By defining all filtering inside a dedicated class
     const feature = new ApiFiltering(Tour.find(), req.query)
@@ -163,7 +165,8 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
             tours
         }
     });
-});
+}); */
+exports.getAllTours = factory.getAll(Tour);
 
 // exports.getTour = async (req, res) => {
 // 	// const id = req.params.id*1; //To convert a integer looking string to int data type Eg: '5'*1 = 5
@@ -197,8 +200,8 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 // };
 
 //Optimized way with a global catch method provided by express - MongoDB
-exports.getTour = catchAsync(async (req, res, next) => {
-    const tour = await Tour.findById(req.params.id); //findById() is a shorthand for findOne({_id: 4533})
+/* exports.getTour = catchAsync(async (req, res, next) => {
+    const tour = await Tour.findById(req.params.id).populate('reviews'); //findById() is a shorthand for findOne({_id: 4533})
 
     if(!tour){
         return next(new AppError('No tour found for this ID', 404));
@@ -210,7 +213,8 @@ exports.getTour = catchAsync(async (req, res, next) => {
             tour
         }
     })
-});
+}); */
+exports.getTour = factory.getOne(Tour, {path: 'reviews'});
 
 // exports.createTour = async (req, res) => {
 //     /* -------- File based --------- */
@@ -250,7 +254,7 @@ exports.getTour = catchAsync(async (req, res, next) => {
 // };
 
 //Optimized way with a global catch method provided by express - MongoDB
-exports.createTour = catchAsync(async (req, res, next) => {
+/* exports.createTour = catchAsync(async (req, res, next) => {
     const newTour = await Tour.create(req.body)
 
     res.status(201).json({
@@ -259,7 +263,8 @@ exports.createTour = catchAsync(async (req, res, next) => {
             tour: newTour
         }
     });
-});
+}); */
+exports.createTour = factory.createOne(Tour);
 
 // exports.updateTour = async (req, res) => {
 //     /* ---- Via Mongoose ----*/
@@ -285,7 +290,7 @@ exports.createTour = catchAsync(async (req, res, next) => {
 // };
 
 //Optimized way with a global catch method provided by express - MongoDB
-exports.updateTour = catchAsync(async (req, res, next) => {
+/* exports.updateTour = catchAsync(async (req, res, next) => {
     const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
         new: true, //Return updated document object
         runValidators: true //To run the schema validation for update command
@@ -302,7 +307,8 @@ exports.updateTour = catchAsync(async (req, res, next) => {
             tour
         }
     });
-});
+}); */
+exports.updateTour = factory.updateOne(Tour);
 
 // exports.deleteTour = async (req, res) => {
 //     /*--- Via Mongoose ---*/
@@ -322,7 +328,7 @@ exports.updateTour = catchAsync(async (req, res, next) => {
 // };
 
 //Optimized way with a global catch method provided by express - MongoDB
-exports.deleteTour = catchAsync(async (req, res, next) => {
+/* exports.deleteTour = catchAsync(async (req, res, next) => {
     const tour = await Tour.findByIdAndDelete(req.params.id);
 
     if(!tour){
@@ -333,7 +339,8 @@ exports.deleteTour = catchAsync(async (req, res, next) => {
         status: 'success',
         data: null
     });
-});
+}); */
+exports.deleteTour = factory.deleteOne(Tour);
 
 /* ------ Aggregation Pipeline ------ */
 // This is use to perform db actions like join, group
@@ -498,4 +505,66 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
         status: 'success',
         data: {plan}
     });
+});
+
+// /tours-within/:distance/center/:latlng/unit/:unit
+// /tours-within/300/center/34.127447,-118.140493/unit/mi
+/* -- Geospatial mongo operator functionality -- */
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+    const { distance, latlng, unit } = req.params;
+    const [lat, lng] = latlng.split(',');
+    const radius = unit === "mi" ? distance/3963.2 : distance/6378.1;
+
+    if (!lat || !lng) {
+        next(new AppError('Please provide latitude and longitude in the format lat,lng', 400))
+    }
+
+    const tours = await Tour.find({ startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } } });
+
+    res.status(200).json({
+        status: 'success',
+        results: tours.length,
+        data: {
+            data: tours
+        }
+    })
+});
+
+/* -- Geospatial aggregate - calculate distance from startLocation -- */
+exports.getDistances = catchAsync(async (req, res, next) => {
+    const { latlng, unit } = req.params;
+    const [lat, lng] = latlng.split(',');
+    if (!lat || !lng) {
+        next(new AppError('Please provide latitude and longitude in the format lat,lng', 400))
+    }
+    const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+
+    // $geoNear is the only aggregation pipeline stage for GeoSpatial operator, and always needs to be the first stage
+    // $geoNear also requires atleast one of the document field defined with GeoSpatial index [2dsphere]
+    // If only one field has the GeoSpatial index, $geoNear automatically considers it, if multiple field has GeoSpatial indexs, then use $keys parameter to assign the field in pipeline
+    const distances = await Tour.aggregate([
+        {
+            $geoNear: {
+                near: {
+                    type: 'Point',
+                    coordinates: [lng*1, lat*1]
+                },
+                distanceField: 'distance',
+                distanceMultiplier: multiplier
+            }
+        },
+        {
+            $project: {
+                distance: 1,
+                name: 1
+            }
+        }
+    ]);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            data: distances
+        }
+    })
 });

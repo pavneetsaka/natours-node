@@ -6,10 +6,17 @@ const router = express.Router();
 
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
-
 router.post('/forgot-password', authController.forgotPassword);
 router.patch('/reset-password/:token', authController.resetPassword);
-router.patch('/update-password', authController.protect, authController.updatePassword);
+
+router.use(authController.protect); //Middleware added to protect all the below routes
+
+router.get('/me', userController.getMe, userController.getUser);
+router.patch('/update-password', authController.updatePassword);
+router.patch('/update-user', userController.updateMe);
+router.delete('/delete-user', userController.deleteMe);
+
+router.use(authController.restrictTo('admin')); //Middleware added to restrict all the below routes
 
 router.route('/')
     .get(userController.getAllUsers)

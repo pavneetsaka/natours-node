@@ -1,18 +1,58 @@
 const express = require('express');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp'); //Http paramater pollution
 
 const AppError = require('./utils/appError'); //Custom error class
 const globalErrorHandler = require('./controllers/errorController'); //Custom error handling middleware function
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 
-//Middlewares
+/* Global Middlewares */
+//Set security HTTP headers
+app.use(helmet()); //Using Helmet package to set security HTTP headers
+
+//Development logging
 if(process.env.NODE_ENV === 'development'){
 	app.use(morgan('dev'));
 }
-app.use(express.json());
+
+//Limit requests from same IP - Usefule to prevent brute force attacks and DDoS attacks
+const limiter = rateLimit({
+	max: 100,
+	windowMs: 60 * 60 * 1000, //In 1 hour (set in milliseconds)
+	message: 'Too many requests from this IP, please try again in an hour!'
+});
+app.use('/api', limiter);
+
+//Body parser, reading data from body into req.body
+app.use(express.json({ limit: '10kb' })); //Limits the body size to 10kb
+
+//Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+//Data sanitization against XSS
+app.use(xss());
+
+//Prevents parameter pollution
+app.use(hpp({
+	//Whitelist certain parameter to avoid error
+	whitelist: [
+		'duration',
+		'ratingsQuantity',
+		'ratingsAverage',
+		'maxGroupSize',
+		'difficulty',
+		'price'
+	]
+}));
+
 app.use(express.static(`${__dirname}/public`));
 
 /*---Custom Middleware---*/
@@ -21,6 +61,7 @@ app.use(express.static(`${__dirname}/public`));
 	next();
 }); */
 
+//Middleware to add time to response
 app.use((req, res, next) => {
 	req.returnTime = new Date().toISOString();
 	next();
@@ -30,6 +71,7 @@ app.use((req, res, next) => {
 //Routes
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 //Middleware to handle error -> In this case route error with custom message 
 //all() -> includes get(), post(), delete(), update() & * means all url slugs
