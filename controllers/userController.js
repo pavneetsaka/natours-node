@@ -2,6 +2,50 @@ const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
+const multer = require('multer'); // Tp habdle file uplod in expressjs
+const sharp = require('sharp'); // Image procssing library
+
+/* //To upload image directly to the storage disk
+	const multerStorage = multer.diskStorage({
+	destination: (req, file, cb) => {
+		cb(null, 'public/img/users');
+	},
+	filename: (req, file, cb) => {
+		const ext = file.mimetype.split('/')[1]; //Extension
+		cb(null, `user-${req.user.id}-${Date.now()}.${ext}`); //Custom file name -> user-userid-timestanp.extension
+	}
+}); */
+const multerStorage = multer.memoryStorage(); // To save/hold image in memory as buffer. Disk storage of file is managed here by sharp library
+
+const multerFilter = (req, file, cb) => {
+	if (file.mimetype.startsWith('image')) {
+		cb(null, true);
+	} else {
+		cb(new AppError('Not an image, please upload only image type', 400), false);
+	}
+};
+
+const upload = multer({
+	storage: multerStorage,
+	fileFilter: multerFilter
+});
+
+exports.uploadUserPhoto = upload.single('photo'); //Using multer, upload.single(File-FormFieldName) is a middleware to upload img to defined destination 
+
+//Resize user upload photo using sharp library
+exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
+	if (!req.file) return next();
+
+	req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+
+	await sharp(req.file.buffer)
+		.resize(500, 500)
+		.toFormat('jpeg')
+		.jpeg({quality: 90})
+		.toFile(`public/img/users/${req.file.filename}`);
+
+	next();
+});
 
 exports.getMe = (req, res, next) => {
 	req.params.id = req.user.id;
@@ -25,6 +69,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 
 	// 2) Update user document
 	const filteredBody = filterObj(req.body, 'name', 'email');
+	if (req.file) filteredBody.photo = req.file.filename;
 	const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
 		new: true,
 		runValidators: true

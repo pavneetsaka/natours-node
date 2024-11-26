@@ -1,0 +1,38 @@
+doctype html
+html
+    head
+        //- #{} is an interpolation syntax to show JS code with string (Similar to ES6 ${})
+        block head
+            meta(charset='UTF-8')
+            meta(name='viewport', content='width=device-width, initial-scale=1.0')
+            link(rel='stylesheet', href='/css/style.css')
+            link(rel='shortcut icon', href='/img/favicon.png', type='image/png')
+            link(rel='stylesheet', href='https://fonts.googleapis.com/css?family=Lato:300,300i,700')
+            title Natours | #{ title ? title : 'Exciting tours for adventurous people' }
+    
+    body
+        //-
+            // Basic Comment
+            //- Hidden comment from inspect
+            //- Buffered code - outputs the code, also allows JS code
+            h1= tour
+            //- Unbuffered code - does not output anything
+            - const x = 9;
+            h2= 2 * x
+            h3= user.toUpperCase()
+            p This is just some text
+
+        // HEADER
+        include _header
+
+        // CONTENT
+        block content
+            h1 This is a placeholder heading for Homepage
+
+        // FOOTER
+        include _footer
+
+        //-
+            script(src="https://unpkg.com/axios/dist/axios.min.js")
+            script(src="/js/login.js")
+        script(src="/js/bundle.js")

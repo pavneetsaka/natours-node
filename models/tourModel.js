@@ -164,7 +164,7 @@ tourSchema.pre(/^find/, function(next){
     //populate() is used to fetched the reference document -'path' -> the column name, 'select' -> fields from referenced document
     this.populate({
         path: 'guides',
-        select: '-__v -passwordChangedAt -role'
+        select: '-__v -passwordChangedAt -_id'
     });
     next();
 });
