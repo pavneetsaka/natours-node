@@ -1,10 +1,12 @@
 import { login, logout } from './login';
 import { updateSettings } from './account';
+import { bookTour } from './stripe';
 
 const loginForm = document.getElementById('login');
 const logOutBtn = document.querySelector('.nav__el--logout');
 const settingsForm = document.getElementById('user-settings');
 const passwordsForm = document.getElementById('user-password');
+const bookTourBtn = document.getElementById('book-tour');
 
 if (loginForm) {
     loginForm.addEventListener('submit', e => {
@@ -48,5 +50,14 @@ if (passwordsForm) {
         passwordsForm.reset();
         passwordsForm.querySelector('.submit-btn').disabled = false;
         passwordsForm.querySelector('.submit-btn').innerHTML = "Save password";
+    });
+}
+
+if (bookTourBtn) {
+    bookTourBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.target.textContent = "Processing...";
+        const { tourId } = e.target.dataset;
+        bookTour(tourId);
     });
 }

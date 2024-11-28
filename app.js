@@ -13,6 +13,7 @@ const globalErrorHandler = require('./controllers/errorController'); //Custom er
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
@@ -25,7 +26,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public'))); //To public folder so static/view files can access assets
 
 //Set security HTTP headers
-app.use(helmet({ contentSecurityPolicy: {  useDefaults: true, directives: { 'script-src': ["'self'", "https://unpkg.com"] } } })); //Using Helmet package to set security HTTP headers
+app.use(helmet({ contentSecurityPolicy: {  useDefaults: true, directives: { 'script-src': ["'self'", "https://unpkg.com", "https://js.stripe.com/v3/"] } } })); //Using Helmet package to set security HTTP headers
 
 //Development logging
 if(process.env.NODE_ENV === 'development'){
@@ -84,6 +85,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 //Middleware to handle error -> In this case route error with custom message 
 //all() -> includes get(), post(), delete(), update() & * means all url slugs
