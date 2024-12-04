@@ -7,6 +7,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp'); //Http paramater pollution
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 
 const AppError = require('./utils/appError'); //Custom error class
 const globalErrorHandler = require('./controllers/errorController'); //Custom error handling middleware function
@@ -69,6 +70,8 @@ app.use(hpp({
 	console.log('Hello from the middleware!');
 	next();
 }); */
+
+app.use(compression()); // This package is used to compress all the text response on client side
 
 //Middleware to add time to response
 app.use((req, res, next) => {

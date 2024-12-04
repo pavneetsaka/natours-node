@@ -6,7 +6,7 @@ export const updateSettings = async (reqObj, type) => {
     try {
         const url = type === 'password' ? 'update-password' : 'update-user';
         const res = await axios({
-            url: 'http://localhost:3000/api/v1/users/'+url,
+            url: '/api/v1/users/'+url,
             method: 'PATCH',
             data: reqObj
         });
