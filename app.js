@@ -19,6 +19,8 @@ const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
 
+app.enable('trust proxy'); // Use in express to enable req.secure and req.headers['x-forwarded-proto'] on production (Mostly specific to Heroku)
+
 /* View template - PUG */
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));

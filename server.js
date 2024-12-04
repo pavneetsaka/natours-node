@@ -35,3 +35,11 @@ process.on('unhandledRejection', (err) => {
         process.exit(1); // 0 - successful, 1 - Exception error
     });
 });
+
+// TO capture SIGTERM Signal for Heroku container - dyno, which restarts the server every 24hrs and shits the app down immediately in production
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down slowly...');
+    server.close(() => {
+        console.log('Process terminated after SIGTERM');
+    });
+})

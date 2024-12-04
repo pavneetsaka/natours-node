@@ -20,9 +20,12 @@ const createSendToken = (user, statusCode, res) => {
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000),
         httpOnly: true //Prevents client side JS from accessing the cookie
     };
-    if(process.env.NODE_ENV === "production"){
+    /* if(process.env.NODE_ENV === "production"){
         cookieOptions.secure = true; //Only works on HTTPS
-    }
+    } */
+   //Heroku specific secure cookie setting for production
+   cookieOptions.secure = (req.secure || req.headers['x-forwarded-proto'] === 'https');
+
     res.cookie('jwt', token, cookieOptions);
 
     //Remove password from the response
