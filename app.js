@@ -8,6 +8,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp'); //Http paramater pollution
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
+const cors = require('cors');
 
 const AppError = require('./utils/appError'); //Custom error class
 const globalErrorHandler = require('./controllers/errorController'); //Custom error handling middleware function
@@ -24,6 +25,16 @@ app.enable('trust proxy'); // Use in express to enable req.secure and req.header
 /* View template - PUG */
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
+
+// Impelementing CORS
+app.use(cors());
+/* // To allow CORS from only specific domain
+app.use(cors({
+	origin: 'https://only-this-domain.com'
+})); */
+
+// For preflight phase (Non-simple http requests apart from GET and POST), in express set 'options' http method which is sent by broweser before the preflight phase requests
+app.options('*', cors()); // 1st param - either *(all) or a specific route can be defined, 2nd param - cors() middleware. Syntax - app.options('/api/ve/tours/:id', cors()), so for this route the PATCH and DELETE request is now allowed from any domain
 
 /* Global Middlewares */
 app.use(express.static(path.join(__dirname, 'public'))); //To public folder so static/view files can access assets
