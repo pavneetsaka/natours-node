@@ -49,3 +49,11 @@ exports.getProfile = (req, res) => {
         title: 'My Profile'
     });
 };
+
+/* To dynamically show alert message on view using 'alert' query param */
+exports.alerts = (req, res, next) => {
+    const {alert} = req.query;
+    if (alert === 'booking') {
+        res.locals.alert = 'Your booking for completed successfully, please check your email for a confirmation';
+    }
+}
